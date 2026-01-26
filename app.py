@@ -189,3 +189,38 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 outputs=[results, plot]
             )
 
+    nav_next.click(
+    fn=go_next,
+    inputs=current_tab,
+    outputs=current_tab
+).then(
+    fn=lambda tab: gr.update(selected=tab),
+    inputs=current_tab,
+    outputs=tabs
+).then(
+    fn=update_next_label,
+    inputs=current_tab,
+    outputs=nav_next
+).then(
+    fn=update_prev_visibility,
+    inputs=current_tab,
+    outputs=nav_prev
+    )
+    
+    nav_prev.click(
+    fn=go_prev,
+    inputs=current_tab,
+    outputs=current_tab
+).then(
+    fn=lambda tab: gr.update(selected=tab),
+    inputs=current_tab,
+    outputs=tabs
+).then(
+    fn=update_next_label,
+    inputs=current_tab,
+    outputs=nav_next
+).then(
+    fn=update_prev_visibility,
+    inputs=current_tab,
+    outputs=nav_prev
+)
