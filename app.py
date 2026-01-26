@@ -224,3 +224,6 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     inputs=current_tab,
     outputs=nav_prev
 )
+
+if __name__ == "__main__":
+    demo.launch(debug=True)
