@@ -74,3 +74,20 @@ def visualize_3d(vectors, query_vec):
     )
 
     return fig
+
+
+TAB_LABELS = {
+    0: "Next ➡ Chunking",
+    1: "Next ➡ Embeddings",
+    2: "Next ➡ FAISS Search",
+    3: "Done ✅"
+}
+
+def go_next(tab): return min(tab + 1, 3)
+def go_prev(tab): return max(tab - 1, 0)
+
+def update_next_label(tab):
+    return gr.update(value=TAB_LABELS[tab])
+
+def update_prev_visibility(tab):
+    return gr.update(visible=tab > 0)
