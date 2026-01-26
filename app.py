@@ -91,3 +91,101 @@ def update_next_label(tab):
 
 def update_prev_visibility(tab):
     return gr.update(visible=tab > 0)
+
+
+
+with gr.Blocks(theme=gr.themes.Soft()) as demo:
+    gr.Markdown("# 📄➡️🧠 RAG Visualizer (PDF + FAISS)")
+    gr.Markdown("### See how PDFs turn into vectors and answers")
+
+    current_tab = gr.State(0)
+    chunks_state = gr.State([])
+    embeddings_state = gr.State(None)
+    faiss_index_state = gr.State(None)
+    query_vec_state = gr.State(None)
+
+    with gr.Row():
+        nav_prev = gr.Button("⬅ Back", visible=False)
+        nav_next = gr.Button("Next ➡ Chunking")
+
+    tabs = gr.Tabs(selected=0)
+
+    with tabs:
+        # ---------------- TAB 0 ----------------
+        with gr.Tab("📄 Upload PDF", id=0):
+            pdf_file = gr.File(file_types=[".pdf"])
+            pdf_text = gr.Textbox(lines=8, label="Extracted Text")
+
+            def load_pdf(file):
+                return read_pdf(file)
+
+            gr.Button("📖 Read PDF").click(
+                load_pdf,
+                inputs=pdf_file,
+                outputs=pdf_text
+            )
+
+        # ---------------- TAB 1 ----------------
+        with gr.Tab("✂️ Chunking", id=1):
+            chunk_size = gr.Slider(50, 200, 100, step=10)
+            chunk_table = gr.Dataframe()
+
+            def run_chunking(text, size):
+                chunks = chunk_text(text, size)
+                df = pd.DataFrame({
+                    "Chunk ID": range(len(chunks)),
+                    "Text": chunks
+                })
+                return df, chunks
+
+            gr.Button("✂️ Create Chunks").click(
+                run_chunking,
+                inputs=[pdf_text, chunk_size],
+                outputs=[chunk_table, chunks_state]
+            )
+
+        # ---------------- TAB 2 ----------------
+        with gr.Tab("🧠 Embeddings + FAISS", id=2):
+            embed_info = gr.Markdown()
+
+            def build_embeddings(chunks):
+                vecs = embed_chunks(chunks)
+                index = build_faiss_index(vecs)
+                return f"""
+                ### ✅ FAISS Index Ready
+                - Chunks: **{len(chunks)}**
+                - Vector Dim: **{vecs.shape[1]}**
+                """, vecs, index
+
+            gr.Button("🧠 Build FAISS Index").click(
+                build_embeddings,
+                inputs=chunks_state,
+                outputs=[embed_info, embeddings_state, faiss_index_state]
+            )
+
+        # ---------------- TAB 3 ----------------
+        with gr.Tab("🔍 Retrieval + 3D View", id=3):
+            query = gr.Textbox(label="Ask a question")
+            k = gr.Slider(1, 10, 3, step=1)
+            results = gr.Dataframe()
+            plot = gr.Plot()
+
+            def retrieve(query, chunks, vectors, index, k):
+                q_vec = model.encode([query])
+                idx, dist = search_faiss(index, q_vec, k)
+
+                df = pd.DataFrame({
+                    "Chunk ID": idx,
+                    "Distance": dist,
+                    "Text": [chunks[i][:200] + "..." for i in idx]
+                })
+
+                fig = visualize_3d(vectors, q_vec)
+                return df, fig
+
+            gr.Button("🔍 Search").click(
+                retrieve,
+                inputs=[query, chunks_state, embeddings_state, faiss_index_state, k],
+                outputs=[results, plot]
+            )
+
