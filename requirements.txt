@@ -1,2 +1,7 @@
 faiss-cpu
 plotly
+gradio
+numpy
+pandas
+sentence-transformers
+PyPdf
